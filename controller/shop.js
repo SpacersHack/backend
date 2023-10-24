@@ -2,6 +2,7 @@ const express = require("express");
 const path = require("path");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const sendMail = require("../utils/sendMail");
 const Shop = require("../model/shop");
 const { isAuthenticated, isSeller, isAdmin } = require("../middleware/auth");
@@ -9,47 +10,146 @@ const cloudinary = require("cloudinary");
 const catchAsyncErrors = require("../middleware/catchAsyncErrors");
 const ErrorHandler = require("../utils/ErrorHandler");
 const sendShopToken = require("../utils/shopToken");
+const generateOTP = require("../utils/generateOTP");
 
 // create shop
-router.post("/create-shop", catchAsyncErrors(async (req, res, next) => {
+router.post(
+  "/create-shop",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const { email } = req.body;
+      try {
+        const sellerEmail = await Shop.findOne({ email });
+
+        if (sellerEmail) {
+          return next(
+            new ErrorHandler("User with this email already exists", 400)
+          );
+        }
+      } catch (error) {
+        if (error.name === "DocumentNotFoundError") {
+          const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+            folder: "avatars",
+          });
+
+          const { otp, otpExpiryTime } = generateOTP();
+
+          const seller = {
+            name: req.body.name,
+            email: email,
+            password: req.body.password,
+            avatar: {
+              public_id: myCloud.public_id,
+              url: myCloud.secure_url,
+            },
+            address: req.body.address,
+            phoneNumber: req.body.phoneNumber,
+            otp,
+            otpExpiryTime,
+          };
+
+          await Shop.create(seller);
+
+          try {
+            await sendMail({
+              email: seller.email,
+              subject: "Verify your account",
+              message: `Hello ${seller.name}, please use this OTP to verify your account: ${otp}`,
+            });
+            res.status(201).json({
+              success: true,
+              message: `Please check your email: ${seller.email} to verify your account!`,
+            });
+          } catch (error) {
+            throw new ErrorHandler(error.message, 500);
+          }
+        } else {
+          return next(new ErrorHandler(error.message, 500));
+        }
+      }
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  })
+);
+
+router.post("/verify-otp", async (req, res, next) => {
   try {
-    const { email } = req.body;
-    const sellerEmail = await Shop.findOne({ email });
-    if (sellerEmail) {
-      return next(new ErrorHandler("User already exists", 400));
+    const { otp, email } = req.body;
+
+    if (!email || !otp) {
+      return next(new ErrorHandler("Required field", 400));
     }
 
-    const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-      folder: "avatars",
+    const user = await Shop.findOne({ email });
+    console.log(user);
+    if (!user) {
+      return next(new ErrorHandler("User doesn't exist!", 400));
+    }
+    console.log(otp);
+    console.log(user);
+    if (user.otp !== otp) {
+      return next(new ErrorHandler("Invalid Otp"));
+    }
+
+    if (user.otpExpiryTime < new Date()) {
+      return next(new ErrorHandler("Otp expired"));
+    }
+
+    if (user.isVerified === true) {
+      throw new Error("Email already verified");
+    }
+
+    await User.findOneAndUpdate(
+      { email: { $like: user.email } },
+      { isVerified: true },
+      { new: true, upsert: true, lean: true }
+    );
+    res.status(201).json({
+      success: true,
+      message: "Email verified successfully",
     });
+  } catch (error) {
+    return next(new ErrorHandler(error.message, 400));
+  }
+});
 
+router.post("/send-otp", async (req, res, next) => {
+  try {
+    const { email } = req.body;
 
-    const seller = {
-      name: req.body.name,
-      email: email,
-      password: req.body.password,
-      avatar: {
-        public_id: myCloud.public_id,
-        url: myCloud.secure_url,
-      },
-      address: req.body.address,
-      phoneNumber: req.body.phoneNumber,
-      zipCode: req.body.zipCode,
-    };
+    if (!email) {
+      return next(new ErrorHandler("Required field", 400));
+    }
 
-    const activationToken = createActivationToken(seller);
+    const user = await Shop.findOne({ email });
 
-    const activationUrl = `https://eshop-tutorial-pyri.vercel.app/seller/activation/${activationToken}`;
+    if (!user) {
+      return next(new ErrorHandler("User doesn't exist!", 400));
+    }
+
+    if (user.isVerified) {
+      throw new Error("User already verified");
+    }
+
+    const { otp, otpExpiryTime } = generateOTP();
+
+    const use = await Shop.findOneAndUpdate(
+      { email: { $like: user.email } },
+      { otp, otpExpiryTime },
+      { new: true, upsert: true, lean: true }
+    );
 
     try {
       await sendMail({
-        email: seller.email,
-        subject: "Activate your Shop",
-        message: `Hello ${seller.name}, please click on the link to activate your shop: ${activationUrl}`,
+        email: user.email,
+        subject: "Activate your account",
+        message: `Hello ${user.name}, please use this OTP to activate your account: ${otp}`,
       });
+
       res.status(201).json({
         success: true,
-        message: `please check your email:- ${seller.email} to activate your shop!`,
+        message: `Please check your email: ${user.email} to activate your account!`,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -57,55 +157,7 @@ router.post("/create-shop", catchAsyncErrors(async (req, res, next) => {
   } catch (error) {
     return next(new ErrorHandler(error.message, 400));
   }
-}));
-
-// create activation token
-const createActivationToken = (seller) => {
-  return jwt.sign(seller, process.env.ACTIVATION_SECRET, {
-    expiresIn: "5m",
-  });
-};
-
-// activate user
-router.post(
-  "/activation",
-  catchAsyncErrors(async (req, res, next) => {
-    try {
-      const { activation_token } = req.body;
-
-      const newSeller = jwt.verify(
-        activation_token,
-        process.env.ACTIVATION_SECRET
-      );
-
-      if (!newSeller) {
-        return next(new ErrorHandler("Invalid token", 400));
-      }
-      const { name, email, password, avatar, zipCode, address, phoneNumber } =
-        newSeller;
-
-      let seller = await Shop.findOne({ email });
-
-      if (seller) {
-        return next(new ErrorHandler("User already exists", 400));
-      }
-
-      seller = await Shop.create({
-        name,
-        email,
-        avatar,
-        password,
-        zipCode,
-        address,
-        phoneNumber,
-      });
-
-      sendShopToken(seller, 201, res);
-    } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
-    }
-  })
-);
+});
 
 // login shop
 router.post(
@@ -118,13 +170,30 @@ router.post(
         return next(new ErrorHandler("Please provide the all fields!", 400));
       }
 
-      const user = await Shop.findOne({ email }).select("+password");
+      const user = await Shop.findOne({ email });
 
       if (!user) {
         return next(new ErrorHandler("User doesn't exists!", 400));
       }
 
-      const isPasswordValid = await user.comparePassword(password);
+      // Check if the user is blocked
+      if (user.isBlocked) {
+        return next(
+          new ErrorHandler("Account blocked, please contact the admin", 403)
+        );
+      }
+
+      // Check if the user is not verified
+      if (!user.isVerified) {
+        return next(
+          new ErrorHandler(
+            "Account not verified, please verify your account",
+            403
+          )
+        );
+      }
+
+      const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
         return next(
@@ -144,9 +213,11 @@ router.get(
   "/getSeller",
   isSeller,
   catchAsyncErrors(async (req, res, next) => {
+    console.log("first");
+    console.log(req);
+    const seller = await Shop.findById(req.seller.id);
     try {
-      const seller = await Shop.findById(req.seller._id);
-
+      console.log(seller);
       if (!seller) {
         return next(new ErrorHandler("User doesn't exists", 400));
       }
@@ -199,39 +270,38 @@ router.get(
 );
 
 // update shop profile picture
-router.put(
-  "/update-shop-avatar",
-  isSeller,
-  catchAsyncErrors(async (req, res, next) => {
-    try {
-      let existsSeller = await Shop.findById(req.seller._id);
+// router.put(
+//   "/update-shop-avatar",
+//   isSeller,
+//   catchAsyncErrors(async (req, res, next) => {
+//     try {
+//       let existsSeller = await Shop.findById(req.seller._id);
 
-        const imageId = existsSeller.avatar.public_id;
+//       const imageId = existsSeller.avatar.public_id;
 
-        await cloudinary.v2.uploader.destroy(imageId);
+//       await cloudinary.v2.uploader.destroy(imageId);
 
-        const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-          folder: "avatars",
-          width: 150,
-        });
+//       const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
+//         folder: "avatars",
+//         width: 150,
+//       });
 
-        existsSeller.avatar = {
-          public_id: myCloud.public_id,
-          url: myCloud.secure_url,
-        };
+//       existsSeller.avatar = {
+//         public_id: myCloud.public_id,
+//         url: myCloud.secure_url,
+//       };
 
-  
-      await existsSeller.save();
+//       await existsSeller.save();
 
-      res.status(200).json({
-        success: true,
-        seller:existsSeller,
-      });
-    } catch (error) {
-      return next(new ErrorHandler(error.message, 500));
-    }
-  })
-);
+//       res.status(200).json({
+//         success: true,
+//         seller: existsSeller,
+//       });
+//     } catch (error) {
+//       return next(new ErrorHandler(error.message, 500));
+//     }
+//   })
+// );
 
 // update seller info
 router.put(

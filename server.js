@@ -1,12 +1,10 @@
 const express = require("express");
 const app = express();
 const cloudinary = require("cloudinary");
-//const { connectCouchbaseDatabase } = require("./db/Couchbase");
 const ErrorHandler = require("./middleware/error");
 const cookieParser = require("cookie-parser");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const connectToDatabase = require("./db/Couchbase");
 const { databaseConnection } = require("./db/database");
 
 app.use(
@@ -59,6 +57,10 @@ const message = require("./controller/message");
 const withdraw = require("./controller/withdraw");
 
 app.use("/api/v2/user", user);
+app.use("/api/v2/shop", shop);
+app.use("/api/v2/product", product);
+app.use("/api/v2/order", order);
+app.use("/api/v2/payment", payment);
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,

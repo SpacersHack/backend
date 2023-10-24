@@ -1,6 +1,7 @@
-const mongoose = require("mongoose");
+const { model, Schema } = require("ottoman");
+const { ottoman } = require("../db/database");
 
-const productSchema = new mongoose.Schema({
+const productSchema = new Schema({
   name: {
     type: String,
     required: [true, "Please enter your product name!"],
@@ -12,9 +13,6 @@ const productSchema = new mongoose.Schema({
   category: {
     type: String,
     required: [true, "Please enter your product category!"],
-  },
-  tags: {
-    type: String,
   },
   originalPrice: {
     type: Number,
@@ -53,10 +51,10 @@ const productSchema = new mongoose.Schema({
       productId: {
         type: String,
       },
-      createdAt:{
+      createdAt: {
         type: Date,
-        default: Date.now(),
-      }
+        default: () => new Date(),
+      },
     },
   ],
   ratings: {
@@ -76,8 +74,8 @@ const productSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now(),
+    default: () => new Date(),
   },
 });
 
-module.exports = mongoose.model("Product", productSchema);
+module.exports = ottoman.model("Product", productSchema);

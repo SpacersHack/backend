@@ -42,11 +42,9 @@ const userSchema = new Schema({
   avatar: {
     public_id: {
       type: String,
-      required: true,
     },
     url: {
       type: String,
-      required: true,
     },
   },
   resetPasswordToken: String,
@@ -80,7 +78,7 @@ userSchema.methods.getJwtToken = function () {
 
 // compare password
 userSchema.methods.comparePassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+  return await bcrypt.compare(enteredPassword, userSchema.password);
 };
 
 module.exports = ottoman.model("User", userSchema);

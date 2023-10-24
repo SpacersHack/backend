@@ -3,15 +3,6 @@ const { ottoman } = require("../db/database");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// const regx = /^(\([0-9]{3}\)|[0-9]{3}-)[0-9]{3}-[0-9]{4}$/;
-// if (value && !value.match(regx)) {
-//   throw new Error(`Phone Number ${value} is not valid`);
-// }
-
-// addValidators({
-//   phoneNumber: phoneValidator,
-// });
-
 const shopSchema = new Schema({
   name: {
     type: String,
@@ -42,6 +33,14 @@ const shopSchema = new Schema({
     type: String,
     default: "Seller",
   },
+  isBlocked: {
+    type: Boolean,
+    default: false,
+  },
+  isVerified: {
+    type: Boolean,
+    default: false,
+  },
   avatar: {
     public_id: {
       type: String,
@@ -51,10 +50,6 @@ const shopSchema = new Schema({
       type: String,
       required: true,
     },
-  },
-  zipCode: {
-    type: Number,
-    required: true,
   },
   withdrawMethod: {
     type: Object,
@@ -75,10 +70,11 @@ const shopSchema = new Schema({
       },
       createdAt: {
         type: Date,
-        default: Date.now(),
+        default: () => new Date(),
       },
       updatedAt: {
         type: Date,
+        default: () => new Date(),
       },
     },
   ],
@@ -87,12 +83,14 @@ const shopSchema = new Schema({
   resetPasswordTime: Date,
 });
 
-// Hash password
-shopSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    next();
-  }
-  this.password = await bcrypt.hash(this.password, 10);
+// Hash password before saving
+shopSchema.pre("save", async (user) => {
+  user.password = await bcrypt.hash(user.password, 10);
+});
+
+// Update `updatedAt` timestamp before saving
+shopSchema.pre("save", async (user) => {
+  user.updatedAt = new Date();
 });
 
 // jwt token
@@ -102,9 +100,9 @@ shopSchema.methods.getJwtToken = function () {
   });
 };
 
-// comapre password
+// compare password
 shopSchema.methods.comparePassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
+  return await bcrypt.compare(enteredPassword, shopSchema.password);
 };
 
 module.exports = ottoman.model("Shop", shopSchema);

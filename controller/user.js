@@ -39,10 +39,7 @@ router.post(
         return next(new ErrorHandler("Account not verified", 403));
       }
 
-      const isPasswordValid = await bcrypt.compare(
-        password,
-        user.password // Assuming 'password' is a property of the Ottoman model
-      );
+      const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
         return next(
@@ -76,25 +73,20 @@ router.post("/create-user", async (req, res, next) => {
       }
     } catch (error) {
       if (error.name === "DocumentNotFoundError") {
-        // Handle the case where no document is found
-        // You can proceed to create a new user with this email
-        // or take the appropriate action as needed.
-        const myCloud = await cloudinary.v2.uploader.upload(avatar, {
-          folder: "avatars",
-        });
+        // const myCloud = await cloudinary.v2.uploader.upload(avatar, {
+        //   folder: "avatars",
+        // });
 
         const { otp, otpExpiryTime } = generateOTP();
         const user = {
           name: name,
           email: email,
           password: password,
-          avatar: {
-            public_id: myCloud.public_id,
-            url: myCloud.secure_url,
-          },
           otp,
           otpExpiryTime,
         };
+
+        console.log(otp);
 
         await User.create(user);
 
@@ -112,7 +104,6 @@ router.post("/create-user", async (req, res, next) => {
           throw new ErrorHandler(error.message, 500);
         }
       } else {
-        // Handle other potential errors
         return next(new ErrorHandler(error.message, 500));
       }
     }
@@ -131,10 +122,12 @@ router.post("/verify-otp", async (req, res, next) => {
     }
 
     const user = await User.findOne({ email });
+    console.log(user);
     if (!user) {
       return next(new ErrorHandler("User doesn't exist!", 400));
     }
-
+    console.log(otp);
+    console.log(user);
     if (user.otp !== otp) {
       return next(new ErrorHandler("Invalid Otp"));
     }
@@ -233,18 +226,15 @@ router.put(
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      // const user = await userCollection.get(req.user.id);
+      const { email, password, phoneNumber, name } = req.body;
 
-      const { password } = req.body;
+      const user = await User.findOne({ email }, { lean: true });
 
       if (!user) {
         return next(new ErrorHandler("User not found", 400));
       }
 
-      const isPasswordValid = await bcrypt.compare(
-        password,
-        user.content.password
-      );
+      const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
         return next(
@@ -252,24 +242,22 @@ router.put(
         );
       }
 
-      const newDoc = {
-        id: user.content.id,
-        name: req.body.name ? req.body.name : user.content.name,
-
-        email: req.body.email ? req.body.email : user.content.email,
-        password: req.body.password
-          ? await bcrypt.hash(req.body.password, 10)
-          : user.content.password,
+      const userData = {
+        name: name,
+        email: email,
+        phoneNumber: phoneNumber,
+        password: password,
       };
 
-      /* Persist updates with new doc */
-      //      await userCollection.replace(user.content.id, newDoc);
-
-      //  const updatedUser = await userCollection.get(req.user.id);
+      const resp = await User.findOneAndUpdate(
+        { email: { $like: user.email } },
+        { ...userData },
+        { new: true, upsert: true, lean: true }
+      );
 
       res.status(201).json({
         success: true,
-        user: updatedUser.content, // Send the updated user data in the response
+        user: resp,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -282,9 +270,9 @@ router.put(
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const user = await userCollection.get(req.user.id);
+      let existsUser = await User.findById(req.user.id);
       if (req.body.avatar !== "") {
-        const imageId = user.avatar.public_id;
+        const imageId = existsUser.avatar.public_id;
 
         await cloudinary.v2.uploader.destroy(imageId);
 
@@ -293,17 +281,17 @@ router.put(
           width: 150,
         });
 
-        user.avatar = {
+        existsUser.avatar = {
           public_id: myCloud.public_id,
           url: myCloud.secure_url,
         };
       }
 
-      //  await userCollection.upsert(user.content.id, user);
+      await existsUser.save;
 
       res.status(200).json({
         success: true,
-        message: "Profile updated",
+        user: existsUser,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -317,11 +305,11 @@ router.put(
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const user = await User.findById(req.user.id);
-      console.log(user);
+      const user = await User.findById(req.user.id, { lean: true });
 
-      const isPasswordMatched = await user.comparePassword(
-        req.body.oldPassword
+      const isPasswordMatched = await bcrypt.compare(
+        req.body.oldPassword,
+        user.password
       );
 
       if (!isPasswordMatched) {
@@ -333,9 +321,18 @@ router.put(
           new ErrorHandler("Password doesn't matched with each other!", 400)
         );
       }
-      user.password = req.body.newPassword;
 
-      await user.save();
+      const userData = {
+        password: req.body.newPassword,
+      };
+
+      const resp = await User.findOneAndUpdate(
+        { email: { $like: user.email } },
+        { ...userData },
+        { new: true, upsert: true, lean: true }
+      );
+
+      await user.save;
 
       res.status(200).json({
         success: true,
