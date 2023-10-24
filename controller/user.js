@@ -317,7 +317,7 @@ router.put(
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const user = await User.findById(req.user.id).select("+password");
+      const user = await User.findById(req.user.id);
       console.log(user);
 
       const isPasswordMatched = await user.comparePassword(

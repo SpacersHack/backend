@@ -5,7 +5,7 @@ const sendToken = (user, statusCode, res) => {
     expiresIn: process.env.JWT_EXPIRES,
   });
 
-  // Options for cookies
+  // Options for cookies users
   const options = {
     expires: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
     httpOnly: true,
