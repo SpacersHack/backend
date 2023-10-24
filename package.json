@@ -1,0 +1,36 @@
+{
+  "name": "e-shop-tutorial",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "engines": {
+    "node": "18.x"
+  },
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "author": "shahriar Sajeeb",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.37.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "couchbase": "^4.2.7",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "js-cookie": "^3.0.1",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.0",
+    "nodemailer": "^6.9.1",
+    "nodemailer-express-handlebars": "^6.1.0",
+    "nodemon": "^2.0.20",
+    "ottoman": "^2.3.4",
+    "prisma": "^5.4.2",
+    "stripe": "^12.0.0",
+    "uuid": "^9.0.1",
+    "uuidv4": "^6.2.13"
+  }
+}
