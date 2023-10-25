@@ -28,9 +28,12 @@ router.post(
         }
       } catch (error) {
         if (error.name === "DocumentNotFoundError") {
-          const myCloud = await cloudinary.v2.uploader.upload(req.body.avatar, {
-            folder: "avatars",
-          });
+          const myCloud = await cloudinary.v2.uploader.upload(
+            req.body?.avatar,
+            {
+              folder: "avatars",
+            }
+          );
 
           const { otp, otpExpiryTime } = generateOTP();
 
@@ -43,7 +46,6 @@ router.post(
               url: myCloud.secure_url,
             },
             address: req.body.address,
-            phoneNumber: req.body.phoneNumber,
             otp,
             otpExpiryTime,
           };
@@ -81,13 +83,11 @@ router.post("/verify-otp", async (req, res, next) => {
       return next(new ErrorHandler("Required field", 400));
     }
 
-    const user = await Shop.findOne({ email });
-    console.log(user);
+    const user = await Shop.findOne({ email }, { lean: true });
+
     if (!user) {
       return next(new ErrorHandler("User doesn't exist!", 400));
     }
-    console.log(otp);
-    console.log(user);
     if (user.otp !== otp) {
       return next(new ErrorHandler("Invalid Otp"));
     }
@@ -100,7 +100,7 @@ router.post("/verify-otp", async (req, res, next) => {
       throw new Error("Email already verified");
     }
 
-    await User.findOneAndUpdate(
+    await Shop.findOneAndUpdate(
       { email: { $like: user.email } },
       { isVerified: true },
       { new: true, upsert: true, lean: true }
@@ -213,11 +213,8 @@ router.get(
   "/getSeller",
   isSeller,
   catchAsyncErrors(async (req, res, next) => {
-    console.log("first");
-    console.log(req);
     const seller = await Shop.findById(req.seller.id);
     try {
-      console.log(seller);
       if (!seller) {
         return next(new ErrorHandler("User doesn't exists", 400));
       }
@@ -309,25 +306,28 @@ router.put(
   isSeller,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { name, description, address, phoneNumber, zipCode } = req.body;
+      const { name, description, address } = req.body;
 
-      const shop = await Shop.findOne(req.seller._id);
+      const shop = await Shop.findById(req.seller.id, { lean: true });
 
       if (!shop) {
         return next(new ErrorHandler("User not found", 400));
       }
+      const ShopData = {
+        name: name,
+        description: description,
+        address: address,
+      };
 
-      shop.name = name;
-      shop.description = description;
-      shop.address = address;
-      shop.phoneNumber = phoneNumber;
-      shop.zipCode = zipCode;
-
-      await shop.save();
+      const resp = await Shop.findOneAndUpdate(
+        { email: { $like: shop.email } },
+        { ...ShopData },
+        { new: true, upsert: true, lean: true }
+      );
 
       res.status(201).json({
         success: true,
-        shop,
+        shop: resp,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -342,12 +342,10 @@ router.get(
   isAdmin("Admin"),
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const sellers = await Shop.find().sort({
-        createdAt: -1,
-      });
+      const sellers = await Shop.find();
       res.status(201).json({
         success: true,
-        sellers,
+        sellers: sellers.rows,
       });
     } catch (error) {
       return next(new ErrorHandler(error.message, 500));
@@ -370,7 +368,7 @@ router.delete(
         );
       }
 
-      await Shop.findByIdAndDelete(req.params.id);
+      await Shop.removeById(req.params.id);
 
       res.status(201).json({
         success: true,

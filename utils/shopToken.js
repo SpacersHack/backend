@@ -1,6 +1,9 @@
 // create token and saving that in cookies
+const jwt = require("jsonwebtoken");
 const sendShopToken = (user, statusCode, res) => {
-  const token = user.getJwtToken();
+  const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET_KEY, {
+    expiresIn: process.env.JWT_EXPIRES,
+  });
 
   // Options for cookies
   const options = {

@@ -122,12 +122,11 @@ router.post("/verify-otp", async (req, res, next) => {
     }
 
     const user = await User.findOne({ email });
-    console.log(user);
+
     if (!user) {
       return next(new ErrorHandler("User doesn't exist!", 400));
     }
-    console.log(otp);
-    console.log(user);
+
     if (user.otp !== otp) {
       return next(new ErrorHandler("Invalid Otp"));
     }
@@ -226,7 +225,7 @@ router.put(
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { email, password, phoneNumber, name } = req.body;
+      const { email, password, name } = req.body;
 
       const user = await User.findOne({ email }, { lean: true });
 
@@ -245,7 +244,6 @@ router.put(
       const userData = {
         name: name,
         email: email,
-        phoneNumber: phoneNumber,
         password: password,
       };
 
@@ -264,6 +262,48 @@ router.put(
     }
   })
 );
+
+// router.put(
+//   "/update-user-role",
+//   isAuthenticated,
+//   catchAsyncErrors(async (req, res, next) => {
+//     try {
+//       console.log("first");
+//       const { email, password, role } = req.body;
+
+//       const user = await User.findOne({ email }, { lean: true });
+
+//       if (!user) {
+//         return next(new ErrorHandler("User not found", 400));
+//       }
+
+//       const isPasswordValid = await bcrypt.compare(password, user.password);
+
+//       if (!isPasswordValid) {
+//         return next(
+//           new ErrorHandler("Please provide the correct information", 400)
+//         );
+//       }
+
+//       const userData = {
+//         role: role,
+//       };
+
+//       const resp = await User.findOneAndUpdate(
+//         { email: { $like: user.email } },
+//         { ...userData },
+//         { new: true, upsert: true, lean: true }
+//       );
+
+//       res.status(201).json({
+//         success: true,
+//         user: resp,
+//       });
+//     } catch (error) {
+//       return next(new ErrorHandler(error.message, 500));
+//     }
+//   })
+// );
 
 router.put(
   "/update-avatar",
@@ -391,11 +431,13 @@ router.delete(
           new ErrorHandler("User is not available with this id", 400)
         );
       }
+      if (user.avatar) {
+        const imageId = user.avatar.public_id;
 
-      const imageId = user.avatar.public_id;
+        await cloudinary.v2.uploader.destroy(imageId);
 
-      await cloudinary.v2.uploader.destroy(imageId);
-
+        await User.removeById(req.params.id);
+      }
       await User.removeById(req.params.id);
 
       res.status(201).json({

@@ -9,7 +9,7 @@ const { databaseConnection } = require("./db/database");
 
 app.use(
   cors({
-    origin: ["https://eshop-tutorial-pyri.vercel.app"],
+    origin: ["https://farm-cart.vercel.app/"],
     credentials: true,
   })
 );

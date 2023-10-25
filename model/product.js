@@ -21,10 +21,7 @@ const productSchema = new Schema({
     type: Number,
     required: [true, "Please enter your product price!"],
   },
-  stock: {
-    type: Number,
-    required: [true, "Please enter your product stock!"],
-  },
+
   images: [
     {
       public_id: {
@@ -34,6 +31,17 @@ const productSchema = new Schema({
       url: {
         type: String,
         required: true,
+      },
+    },
+  ],
+  additionalInfo: [
+    {
+      HarvestDate: { type: Date },
+      weight: {
+        type: String,
+      },
+      SustainabilityPractice: {
+        type: String,
       },
     },
   ],

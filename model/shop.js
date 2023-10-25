@@ -11,6 +11,7 @@ const shopSchema = new Schema({
   email: {
     type: String,
     required: [true, "Please enter your shop email address"],
+    lowercase: true,
   },
   password: {
     type: String,
@@ -25,10 +26,6 @@ const shopSchema = new Schema({
     type: String,
     required: true,
   },
-  phoneNumber: {
-    type: String,
-    require: true,
-  },
   role: {
     type: String,
     default: "Seller",
@@ -41,14 +38,21 @@ const shopSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  otp: {
+    type: String,
+  },
+
+  otpExpiryTime: {
+    type: Date,
+  },
   avatar: {
     public_id: {
       type: String,
-      required: true,
+      required: false,
     },
     url: {
       type: String,
-      required: true,
+      required: false,
     },
   },
   withdrawMethod: {

@@ -11,14 +11,12 @@ const userSchema = new Schema({
   email: {
     type: String,
     required: [true, "Please enter your email!"],
+    lowercase: true,
   },
   password: {
     type: String,
     required: [true, "Please enter your password"],
     minLength: [4, "Password should be greater than 4 characters"],
-  },
-  phoneNumber: {
-    type: String,
   },
   role: {
     type: String,
