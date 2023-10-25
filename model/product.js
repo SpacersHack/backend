@@ -38,6 +38,10 @@ const productSchema = new Schema({
     type: Boolean,
     default: false,
   },
+  isPending: {
+    type: Boolean,
+    default: false,
+  },
   isRejected: {
     type: Boolean,
     default: false,
@@ -83,10 +87,6 @@ const productSchema = new Schema({
   shop: {
     type: Object,
     required: true,
-  },
-  sold_out: {
-    type: Number,
-    default: 0,
   },
   createdAt: {
     type: Date,
