@@ -249,4 +249,25 @@ router.get(
     }
   })
 );
+
+router.get(
+  "/single-product/:id",
+  catchAsyncErrors(async (req, res, next) => {
+    try {
+      const product = await Product.find({ id: req.params.id }, { lean: true });
+
+      if (!product) {
+        return next(new ErrorHandler("Product is not found with this id", 404));
+      }
+
+      res.status(201).json({
+        success: true,
+        product: product.rows,
+      });
+    } catch (error) {
+      return next(new ErrorHandler(error.message, 500));
+    }
+  })
+);
+
 module.exports = router;
