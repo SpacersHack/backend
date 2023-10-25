@@ -46,6 +46,7 @@ router.post(
               url: myCloud.secure_url,
             },
             address: req.body.address,
+            description: req.body.description,
             otp,
             otpExpiryTime,
           };

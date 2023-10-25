@@ -34,6 +34,14 @@ const productSchema = new Schema({
       },
     },
   ],
+  isApproved: {
+    type: Boolean,
+    default: false,
+  },
+  isRejected: {
+    type: Boolean,
+    default: false,
+  },
   additionalInfo: [
     {
       HarvestDate: { type: Date },
