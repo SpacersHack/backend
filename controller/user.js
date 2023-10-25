@@ -263,48 +263,6 @@ router.put(
   })
 );
 
-// router.put(
-//   "/update-user-role",
-//   isAuthenticated,
-//   catchAsyncErrors(async (req, res, next) => {
-//     try {
-//       console.log("first");
-//       const { email, password, role } = req.body;
-
-//       const user = await User.findOne({ email }, { lean: true });
-
-//       if (!user) {
-//         return next(new ErrorHandler("User not found", 400));
-//       }
-
-//       const isPasswordValid = await bcrypt.compare(password, user.password);
-
-//       if (!isPasswordValid) {
-//         return next(
-//           new ErrorHandler("Please provide the correct information", 400)
-//         );
-//       }
-
-//       const userData = {
-//         role: role,
-//       };
-
-//       const resp = await User.findOneAndUpdate(
-//         { email: { $like: user.email } },
-//         { ...userData },
-//         { new: true, upsert: true, lean: true }
-//       );
-
-//       res.status(201).json({
-//         success: true,
-//         user: resp,
-//       });
-//     } catch (error) {
-//       return next(new ErrorHandler(error.message, 500));
-//     }
-//   })
-// );
-
 router.put(
   "/update-avatar",
   isAuthenticated,

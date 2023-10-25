@@ -7,6 +7,7 @@ const Order = require("../model/order");
 const Shop = require("../model/shop");
 const cloudinary = require("cloudinary");
 const ErrorHandler = require("../utils/ErrorHandler");
+const wishList = require("../model/wishList");
 
 // create product
 router.post(
@@ -249,6 +250,63 @@ router.get(
     }
   })
 );
+
+// router.post(
+//   "/add-to-wishlist",
+//   isAuthenticated,
+//   catchAsyncErrors(async (req, res, next) => {
+//     try {
+//       const { userId, productId } = req.body;
+
+//       // Check if the item is already in the wishlist
+//       const existingWishlistItem = await wishList.findOne({
+//         user: userId,
+//         product: productId,
+//       });
+
+//       console.log(existingWishlistItem);
+
+//       if (existingWishlistItem) {
+//         return next(new ErrorHandler("Product already in the wishlist", 400));
+//       }
+
+//       // Create a new wishlist item
+//       const newWishlistItem = new wishList({
+//         user: userId,
+//         product: productId,
+//       });
+
+//       // Save the item to the database
+//       await newWishlistItem.save();
+
+//       res.status(201).json({ message: "Product added to the wishlist" });
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   })
+// );
+
+// router.post(
+//   "/add-to-wishlist",
+//   isAuthenticated,
+//   catchAsyncErrors(async (req, res, next) => {
+//     try {
+//       const userId = req.user.id;
+
+//       // const wishList = await wishList
+//       //   .find({ user: userId })
+//       //   .populate("product");
+
+//       console.log(wishList);
+
+//       res.status(201).json({ status: "Success", wishList });
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   })
+// );
 
 router.get(
   "/single-product/:id",

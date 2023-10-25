@@ -28,12 +28,12 @@ router.post(
         }
       } catch (error) {
         if (error.name === "DocumentNotFoundError") {
-          const myCloud = await cloudinary.v2.uploader.upload(
-            req.body?.avatar,
-            {
-              folder: "avatars",
-            }
-          );
+          // const myCloud = await cloudinary.v2.uploader.upload(
+          //   req.body?.avatar,
+          //   {
+          //     folder: "avatars",
+          //   }
+          // );
 
           const { otp, otpExpiryTime } = generateOTP();
 
@@ -41,10 +41,10 @@ router.post(
             name: req.body.name,
             email: email,
             password: req.body.password,
-            avatar: {
-              public_id: myCloud.public_id,
-              url: myCloud.secure_url,
-            },
+            // avatar: {
+            //   public_id: myCloud.public_id,
+            //   url: myCloud.secure_url,
+            // },
             address: req.body.address,
             description: req.body.description,
             otp,

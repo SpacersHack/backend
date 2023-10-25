@@ -11,7 +11,7 @@ router.post(
       amount: req.body.amount,
       currency: "inr",
       metadata: {
-        company: "Becodemy",
+        company: "SpaceHack",
       },
     });
     res.status(200).json({
@@ -27,6 +27,5 @@ router.get(
     res.status(200).json({ stripeApikey: process.env.STRIPE_API_KEY });
   })
 );
-
 
 module.exports = router;

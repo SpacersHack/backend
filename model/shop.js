@@ -45,16 +45,16 @@ const shopSchema = new Schema({
   otpExpiryTime: {
     type: Date,
   },
-  avatar: {
-    public_id: {
-      type: String,
-      required: false,
-    },
-    url: {
-      type: String,
-      required: false,
-    },
-  },
+  // avatar: {
+  //   public_id: {
+  //     type: String,
+  //     required: false,
+  //   },
+  //   url: {
+  //     type: String,
+  //     required: false,
+  //   },
+  // },
   withdrawMethod: {
     type: Object,
   },

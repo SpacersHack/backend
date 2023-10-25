@@ -9,7 +9,11 @@ const { databaseConnection } = require("./db/database");
 
 app.use(
   cors({
-    origin: ["https://farm-cart.vercel.app", "http://localhost:3001"],
+    origin: [
+      "https://farm-cart.vercel.app",
+      "http://localhost:3001",
+      "https://farmcart-dashboard-m8jz.vercel.app",
+    ],
     credentials: true,
   })
 );
@@ -48,13 +52,8 @@ app.get("/test", (req, res) => {
 const user = require("./controller/user");
 const shop = require("./controller/shop");
 const product = require("./controller/product");
-const event = require("./controller/event");
-const coupon = require("./controller/coupounCode");
 const payment = require("./controller/payment");
 const order = require("./controller/order");
-const conversation = require("./controller/conversation");
-const message = require("./controller/message");
-const withdraw = require("./controller/withdraw");
 
 app.use("/api/v2/user", user);
 app.use("/api/v2/shop", shop);
