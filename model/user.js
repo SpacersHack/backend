@@ -8,6 +8,10 @@ const userSchema = new Schema({
     type: String,
     required: [true, "Please enter your name!"],
   },
+  wishlistIds: {
+    type: [String],
+    default: [],
+  },
   email: {
     type: String,
     required: [true, "Please enter your email!"],

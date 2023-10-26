@@ -10,6 +10,7 @@ const sendToken = require("../utils/jwtToken");
 const { isAuthenticated, isAdmin } = require("../middleware/auth");
 const bcrypt = require("bcrypt");
 const generateOTP = require("../utils/generateOTP");
+const Product = require("../model/product");
 
 router.post(
   "/login-user",
@@ -22,6 +23,7 @@ router.post(
       }
       // Check if the user with the given email exists
       const user = await User.findOne({ email });
+      console.log(user.wishlistIds);
 
       if (!user || user === undefined || user === null) {
         return next(new ErrorHandler("User not found", 400));
@@ -73,10 +75,6 @@ router.post("/create-user", async (req, res, next) => {
       }
     } catch (error) {
       if (error.name === "DocumentNotFoundError") {
-        // const myCloud = await cloudinary.v2.uploader.upload(avatar, {
-        //   folder: "avatars",
-        // });
-
         const { otp, otpExpiryTime } = generateOTP();
         const user = {
           name: name,

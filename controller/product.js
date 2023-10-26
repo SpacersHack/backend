@@ -178,14 +178,14 @@ router.get(
 );
 // review for a product
 router.put(
-  "/create-new-review",
+  "/create-new-review/",
   isAuthenticated,
   catchAsyncErrors(async (req, res, next) => {
     try {
-      const { user, rating, comment, productId, orderId } = req.body;
-
+      const { user, rating, comment, productId } = req.body;
+      console.log(productId);
       const product = await Product.findById(productId);
-
+      console.log(product);
       const review = {
         user,
         rating,
@@ -194,12 +194,12 @@ router.put(
       };
 
       const isReviewed = product.reviews.find(
-        (rev) => rev.user._id === req.user._id
+        (rev) => rev.user.id === req.user.id
       );
 
       if (isReviewed) {
         product.reviews.forEach((rev) => {
-          if (rev.user._id === req.user._id) {
+          if (rev.user.id === req.user.id) {
             (rev.rating = rating), (rev.comment = comment), (rev.user = user);
           }
         });
@@ -216,12 +216,6 @@ router.put(
       product.ratings = avg / product.reviews.length;
 
       await product.save({ validateBeforeSave: false });
-
-      await Order.findByIdAndUpdate(
-        orderId,
-        { $set: { "cart.$[elem].isReviewed": true } },
-        { arrayFilters: [{ "elem._id": productId }], new: true }
-      );
 
       res.status(200).json({
         success: true,
@@ -250,63 +244,6 @@ router.get(
     }
   })
 );
-
-// router.post(
-//   "/add-to-wishlist",
-//   isAuthenticated,
-//   catchAsyncErrors(async (req, res, next) => {
-//     try {
-//       const { userId, productId } = req.body;
-
-//       // Check if the item is already in the wishlist
-//       const existingWishlistItem = await wishList.findOne({
-//         user: userId,
-//         product: productId,
-//       });
-
-//       console.log(existingWishlistItem);
-
-//       if (existingWishlistItem) {
-//         return next(new ErrorHandler("Product already in the wishlist", 400));
-//       }
-
-//       // Create a new wishlist item
-//       const newWishlistItem = new wishList({
-//         user: userId,
-//         product: productId,
-//       });
-
-//       // Save the item to the database
-//       await newWishlistItem.save();
-
-//       res.status(201).json({ message: "Product added to the wishlist" });
-//     } catch (error) {
-//       console.error(error);
-//       res.status(500).json({ message: "Server error" });
-//     }
-//   })
-// );
-
-// router.post(
-//   "/add-to-wishlist",
-//   isAuthenticated,
-//   catchAsyncErrors(async (req, res, next) => {
-//     try {
-//       const userId = req.user.id;
-
-//       // const wishList = await wishList
-//       //   .find({ user: userId })
-//       //   .populate("product");
-
-//       console.log(wishList);
-
-//       res.status(201).json({ status: "Success", wishList });
-//     } catch (error) {
-//       console.error(error);
-//       res.status(500).json({ message: "Server error" });
-//     }
-//   })
-// );
 
 router.get(
   "/single-product/:id",
