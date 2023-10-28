@@ -20,6 +20,7 @@ router.post(
       const { email } = req.body;
       try {
         const sellerEmail = await Shop.findOne({ email });
+        console.log(sellerEmail);
 
         if (sellerEmail) {
           return next(
@@ -35,7 +36,7 @@ router.post(
           //   }
           // );
 
-          const { otp, otpExpiryTime } = generateOTP();
+          //  const { otp, otpExpiryTime } = generateOTP();
 
           const seller = {
             name: req.body.name,
@@ -47,25 +48,16 @@ router.post(
             // },
             address: req.body.address,
             description: req.body.description,
-            otp,
-            otpExpiryTime,
+            // otp,
+            // otpExpiryTime,
           };
 
-          await Shop.create(seller);
-
-          try {
-            await sendMail({
-              email: seller.email,
-              subject: "Verify your account",
-              message: `Hello ${seller.name}, please use this OTP to verify your account: ${otp}`,
-            });
-            res.status(201).json({
-              success: true,
-              message: `Please check your email: ${seller.email} to verify your account!`,
-            });
-          } catch (error) {
-            throw new ErrorHandler(error.message, 500);
-          }
+          const shop = await Shop.create(seller);
+          res.status(201).json({
+            success: true,
+            message: "Shop successfully created",
+            shop,
+          });
         } else {
           return next(new ErrorHandler(error.message, 500));
         }
@@ -185,14 +177,14 @@ router.post(
       }
 
       // Check if the user is not verified
-      if (!user.isVerified) {
-        return next(
-          new ErrorHandler(
-            "Account not verified, please verify your account",
-            403
-          )
-        );
-      }
+      // if (!user.isVerified) {
+      //   return next(
+      //     new ErrorHandler(
+      //       "Account not verified, please verify your account",
+      //       403
+      //     )
+      //   );
+      // }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
